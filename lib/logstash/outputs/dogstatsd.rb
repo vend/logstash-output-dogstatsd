@@ -71,7 +71,7 @@ class LogStash::Outputs::Dogstatsd < LogStash::Outputs::Base
 
   public
   def register
-    @client = Datadog::Statsd.new(@host, @port)
+    @client = Datadog::Statsd.new(@host, @port, single_thread: true, buffer_max_pool_size: 1)
   end # def register
 
   public
