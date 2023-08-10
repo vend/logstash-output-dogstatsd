@@ -1,0 +1,51 @@
+name: Release logstash-output-dogstatsd
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+
+jobs:
+  release:
+    name: Release logstash-output-dogstatsd
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+      
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Normalise version tag
+        id: normalise_version
+        shell: bash
+        run: |
+          version=$(echo ${{ github.event.release.tag_name }} | sed -e 's/v//g')
+          echo "::set-output name=version::$version"
+      
+      - name: Set Gem version
+        run: |
+          sed -i 's/0.0.0/${{ steps.normalise_version.outputs.version }}/g' logstash-output-dogstatsd.gemspec
+
+      - name: Get latest release from API
+        id: get_upload_url
+        shell: bash
+        run: |
+          curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/vend/logstash-output-dogstatsd/releases" > /tmp/releases.json
+          url=$(jq -r '.[0].upload_url' /tmp/releases.json)
+          echo "::set-output name=url::$url"
+
+      - name: Upload artifact
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_NAME: logstash-output-dogstatsd-${{ steps.normalise_version.outputs.version }}.gem
+        with:
+          upload_url:  ${{ steps.get_upload_url.outputs.url }}
+          asset_path: ./${{ env.ARTIFACT_NAME }}
+          asset_name: ${{ env.ARTIFACT_NAME }}
+          asset_content_type: application/octet-stream
