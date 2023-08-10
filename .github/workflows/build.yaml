@@ -30,6 +30,10 @@ jobs:
       - name: Set Gem version
         run: |
           sed -i 's/0.0.0/${{ steps.normalise_version.outputs.version }}/g' logstash-output-dogstatsd.gemspec
+      
+      - name: Build Ruby Gem
+        run: |
+          gem build logstash-output-dogstatsd.gemspec
 
       - name: Get latest release from API
         id: get_upload_url
